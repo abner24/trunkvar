@@ -56,7 +56,7 @@ def snv(ref,alt):
 #chrom, start and end are lists
 #_1 are values to be appended to the above lists
 def add_entry(chrom,start,end,chrom_1,start_1,end_1):
-	global chrom start end hap
+	global chrom,start,end,hap
 	chrom.append(chrom_1)
 	start.append(start_1)
 	end.append(end_1)
