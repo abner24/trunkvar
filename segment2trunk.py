@@ -16,11 +16,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--seg', help = 'sequenza segments file')
 parser.add_argument('--vcf', help = 'vcf file from MuTect')
 parser.add_argument('-p', help='Mean ploidy value obtained from sequenza')
+parser.add_arguments('-o', help='output directory')
 args=vars(parser.parse_args())
 
 seg_file = args['seg']
 vcf_file = args['vcf']
 ploidy = int(args['p'])
+out_dir = args['o']
 
 #if  sys.argv[2] != None:
 #    seg_file=sys.argv[2]
@@ -31,8 +33,7 @@ ploidy = int(args['p'])
 #else:
 #    print('please input a ploidy number')
 
-out_dir=os.path.dirname(seg_file)
-out_file=os.path.join(out_dir,'output.trunk_var')
+out_file=os.path.join(out_dir,'trunkfile')
 
 def A_allele(ploidy):
     if ploidy%2==0:
@@ -55,10 +56,11 @@ def snv(ref,alt):
 #chrom, start and end are lists
 #_1 are values to be appended to the above lists
 def add_entry(chrom,start,end,chrom_1,start_1,end_1):
-	global chrom start end
+	global chrom start end hap
 	chrom.append(chrom_1)
 	start.append(start_1)
 	end.append(end_1)
+	#hap.append(hap_1) dont know if i want to add this to the function or not
 				
 def main():
     chrom=[]
@@ -89,9 +91,9 @@ def main():
             if "chromosome" in elements[0]:
             	continue
             else:
-				chrom_1=elements[0]
-				start_1=int(elements[1]-1)
-				end_1=int(elements[2]-1)
+		chrom_1=elements[0]
+		start_1=int(elements[1]-1)
+		end_1=int(elements[2]-1)
 
                 #chrom.append(elements[0])
                 #start.append(int(elements[1])-1)
@@ -99,26 +101,69 @@ def main():
                 #10 is A 11 is B
                 hap_0 = int(elements[10])
                 hap_1 = int(elements[11])
-                if hap0+hap1==2:
-				    if (hap0&&hap1)==1:
-						continue
-				    elif hap0<1:
-						add_entry(chrom,start,end,chrom_1,start_1,end_1)
+                if hap_0+hap_1==2:
+			if (hap_0==1 and hap_1==1):
+				continue
+			elif hap_0<1:
+				add_entry(chrom,start,end,chrom_1,start_1,end_1)
+				hap.append('0')
+				form.append('-1')
+						
+				add_entry(chrom,start,end,chrom_1,start_1,end_1)
+				hap.append('1')
+				form.append('+1')
+			else:
+				add_entry(chrom,start,end,chrom_1,start_1,end_1)
+				hap.append('1')
+				form.append('-1')
+						
+				add_entry(chrom,start,end,chrom_1,start_1,end_1)
+				hap.append('0')
+				form.append('+1')
+			continue
 								
-                    form.append("0")
-                    hap.append('0')
-                elif (hap_0+hap_1) > ploidy:
-                    state.append('+'+str((hap_0+hap_1)-ploidy))
-                    if hap_0>hap_1:
-                        hap.append('0')
-                    else:
-                        hap.append('1')
-                else:
-                    form.append("-1")
-                    if hap_1>hap_0:
-                        hap.append('0')
-                    else:
-                        hap.append('1')
+                elif (hap_0+hap_1) > 2:
+			if hap_1==0 or hap_0==0:
+				if hap_0==0:
+					add_entry(chrom,start,end,chrom_1,start_1,end_1)
+					hap.append('0')
+					form.append('-1')
+
+					add_entry(chrom,start,end,chrom_1,start_1,end_1)
+					hap.append('1')
+					form.append('+'+str(hap_0-1))
+
+				else:
+					add_entry(chrom,start,end,chrom_1,start_1,end_1)
+					hap.append('1')
+					form.append('-1')
+
+					add_entry(chrom,start,end,chrom_1,start_1,end_1)
+					hap.append('0')
+					form.append('+'+str(hap_0-1))
+			else:
+				add_entry(chrom,start,end,chrom_1,start_1,end_1)
+				hap.append('1')
+				form.append('+'+str(hap_0-1))
+
+				add_entry(chrom,start,end,chrom_1,start_1,end_1)
+				hap.append('0')
+				form.append('+'+str(hap_0-1))
+	
+		else:
+			if hap_0 < 0 or hap_1 < 0:
+				continue
+			else:
+				if hap_0==1:
+					add_entry(chrom,start,end,chrom_1,start_1,end_1)
+					hap.append('0')
+					form.append('-1')
+				else:
+					add_entry(chrom,start,end,chrom_1,start_1,end_1)
+					hap.append('1')
+					form.append('-1')
+	
+
     segment.close()
 
     with open(out_file,'w') as out:
