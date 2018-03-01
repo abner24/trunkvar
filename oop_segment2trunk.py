@@ -17,7 +17,7 @@ parser.add_argument('--seg', help = 'sequenza segments file')
 parser.add_argument('--vcf', help = 'vcf file from MuTect')
 #parser.add_argument('-p', help='Mean ploidy value obtained from sequenza')
 parser.add_argument('-o', help='output directory')
-paeser.add_argument('-s', help='(y/n) or yes/no option to include sex chromosomes')
+parser.add_argument('-s', help='(y/n) or yes/no option to include sex chromosomes')
 args=vars(parser.parse_args())
 
 seg_file = args['seg']
@@ -101,7 +101,10 @@ def main():
 			if "chromosome" in elements[0]:
 				continue
 			else:
-				chrom_1=elements[0]
+				chrom_1=elements[0].strip('\"')
+				if sex_chrom == 'n':
+					if chrom_1.lower() == 'x' or chrom_1.lower()=='y':
+						continue
 				start_1=int(elements[1])-1
 				end_1=int(elements[2])-1
 
