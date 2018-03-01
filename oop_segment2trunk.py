@@ -17,10 +17,12 @@ parser.add_argument('--seg', help = 'sequenza segments file')
 parser.add_argument('--vcf', help = 'vcf file from MuTect')
 #parser.add_argument('-p', help='Mean ploidy value obtained from sequenza')
 parser.add_argument('-o', help='output directory')
+paeser.add_argument('-s', help='(y/n) or yes/no option to include sex chromosomes')
 args=vars(parser.parse_args())
 
 seg_file = args['seg']
 vcf_file = args['vcf']
+sex_chrom = args['s']
 #ploidy = int(args['p'])
 out_dir = args['o']
 
@@ -53,6 +55,11 @@ def snv(ref,alt):
 		if values==alt:
 			return form
 
+	def amplification(count):
+		return '+'+str(count-1)
+
+	def deletion():
+		return '-1'
 #chrom, start and end are lists
 #_1 are values to be appended to the above lists
 def main():
@@ -63,7 +70,9 @@ def main():
 			self.end=[]
 			self.form=[]
 			self.hap=[]
-		
+
+
+
 		def add_entry(self,chrom_1,start_1,end_1):
 			self.chrom.append(chrom_1)
 			self.start.append(start_1)
@@ -74,6 +83,7 @@ def main():
 	#A_al=A_allele(ploidy)
 
 	with io.TextIOWrapper(io.BufferedReader(gzip.open(vcf_file,'rb'))) as vcf_read:
+	#with open(vcf_file,'r') as vcf_read:
 		for line in vcf_read:
 			elements=line.strip().split()
 			if line[0]!='#':
@@ -95,71 +105,83 @@ def main():
 				start_1=int(elements[1])-1
 				end_1=int(elements[2])-1
 
+				entry = a.add_entry(chrom_1,start_1,end_1)
+				hap_seg = [int(elements[10]),int(elements[11])]
+				for counter,i in hap_seg:
+					if i > 1:
+						entry()
+						a.hap.append(str(counter))
+						a.form.append(amplification(i))
+					if i<1:
+						entry()
+						a.hap.append(str(counter))
+						a.form.append(deletion())
+
 				#chrom.append(elements[0])
 				#start.append(int(elements[1])-1)
 				#end.append(int(elements[2])-1)
 				#10 is A 11 is B
-				hap_0 = int(elements[10])
-				hap_1 = int(elements[11])
-				if hap_0+hap_1==2:
-					continue
-					if hap_0<1:
-						a.add_entry(chrom_1,start_1,end_1)
-						a.hap.append('0')
-						a.form.append('-1')
-						a.add_entry(chrom_1,start_1,end_1)
-						a.hap.append('1')
-						a.form.append('+1')
-					else:
-						a.add_entry(chrom_1,start_1,end_1)
-						a.hap.append('1')
-						a.form.append('-1')
-						a.add_entry(chrom_1,start_1,end_1)
-						a.hap.append('0')
-						a.form.append('+1')
-						continue
-				elif (hap_0+hap_1)>2:
-					if hap_1==0 or hap_0==0:
-						if hap_0==0:
-							a.add_entry(chrom_1,start_1,end_1)
-							a.hap.append('0')
-							a.form.append('-1')
-							a.add_entry(chrom_1,start_1,end_1)
-							a.hap.append('1')
-							a.form.append('+'+str(hap_1-1))
-						else:
-							a.add_entry(chrom_1,start_1,end_1)
-							a.hap.append('1')
-							a.form.append('-1')
-							a.add_entry(chrom_1,start_1,end_1)
-							a.hap.append('0')
-							a.form.append('+'+str(hap_0-1))
-					else:
-						a.add_entry(chrom_1,start_1,end_1)
-						a.hap.append('1')
-						a.form.append('+'+str(hap_0-1))
-						a.add_entry(chrom_1,start_1,end_1)
-						a.hap.append('0')
-						a.form.append('+'+str(hap_0-1))
-				else:
-					if hap_0 < 0 or hap_1 < 0:
-						continue
-					else:
-						if hap_0==1:
-							a.add_entry(chrom_1,start_1,end_1)
-							a.hap.append('0')
-							a.form.append('-1')
-						elif hap_1==1:
-							a.add_entry(chrom_1,start_1,end_1)
-							a.hap.append('1')
-							a.form.append('-1')
-						else:
-							a.add_entry(chrom_1,start_1,end_1)
-							a.hap.append('0')
-							a.form.append('-1')
-							a.add_entry(chrom_1,start_1,end_1)
-							a.hap.append('1')
-							a.form.append('-1')
+				# hap_0 = int(elements[10])
+				# hap_1 = int(elements[11])
+				# if hap_0+hap_1==2:
+				# 	continue
+				# 	if hap_0<1:
+				# 		a.add_entry(chrom_1,start_1,end_1)
+				# 		a.hap.append('0')
+				# 		a.form.append('-1')
+				# 		a.add_entry(chrom_1,start_1,end_1)
+				# 		a.hap.append('1')
+				# 		a.form.append('+1')
+				# 	else:
+				# 		a.add_entry(chrom_1,start_1,end_1)
+				# 		a.hap.append('1')
+				# 		a.form.append('-1')
+				# 		a.add_entry(chrom_1,start_1,end_1)
+				# 		a.hap.append('0')
+				# 		a.form.append('+1')
+				# 		continue
+				# elif (hap_0+hap_1)>2:
+				# 	if hap_1==0 or hap_0==0:
+				# 		if hap_0==0:
+				# 			a.add_entry(chrom_1,start_1,end_1)
+				# 			a.hap.append('0')
+				# 			a.form.append('-1')
+				# 			a.add_entry(chrom_1,start_1,end_1)
+				# 			a.hap.append('1')
+				# 			a.form.append('+'+str(hap_1-1))
+				# 		else:
+				# 			a.add_entry(chrom_1,start_1,end_1)
+				# 			a.hap.append('1')
+				# 			a.form.append('-1')
+				# 			a.add_entry(chrom_1,start_1,end_1)
+				# 			a.hap.append('0')
+				# 			a.form.append('+'+str(hap_0-1))
+				# 	else:
+				# 		a.add_entry(chrom_1,start_1,end_1)
+				# 		a.hap.append('1')
+				# 		a.form.append('+'+str(hap_0-1))
+				# 		a.add_entry(chrom_1,start_1,end_1)
+				# 		a.hap.append('0')
+				# 		a.form.append('+'+str(hap_0-1))
+				# else:
+				# 	if hap_0 < 0 or hap_1 < 0:
+				# 		continue
+				# 	else:
+				# 		if hap_0==1:
+				# 			a.add_entry(chrom_1,start_1,end_1)
+				# 			a.hap.append('0')
+				# 			a.form.append('-1')
+				# 		elif hap_1==1:
+				# 			a.add_entry(chrom_1,start_1,end_1)
+				# 			a.hap.append('1')
+				# 			a.form.append('-1')
+				# 		else:
+				# 			a.add_entry(chrom_1,start_1,end_1)
+				# 			a.hap.append('0')
+				# 			a.form.append('-1')
+				# 			a.add_entry(chrom_1,start_1,end_1)
+				# 			a.hap.append('1')
+				# 			a.form.append('-1')
 
 
 	segment.close()
