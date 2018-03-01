@@ -87,6 +87,11 @@ def main():
 		for line in vcf_read:
 			elements=line.strip().split()
 			if line[0]!='#':
+				chrom_1=elements[0]
+				if sex_chrom.lower() == 'n':
+					if chrom_1.lower() == 'x' or chrom_1.lower()=='y':
+						continue
+
 				a.chrom.append(elements[0])
 				a.start.append(int(elements[1])-1)
 				a.end.append(int(elements[1]))
@@ -102,7 +107,7 @@ def main():
 				continue
 			else:
 				chrom_1=elements[0].strip('\"')
-				if sex_chrom == 'n':
+				if sex_chrom.lower() == 'n':
 					if chrom_1.lower() == 'x' or chrom_1.lower()=='y':
 						continue
 				start_1=int(elements[1])-1
