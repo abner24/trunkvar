@@ -71,24 +71,6 @@ def main():
 	a = allele()
 	#A_al=A_allele(ploidy)
 
-	with io.TextIOWrapper(io.BufferedReader(gzip.open(vcf_file,'rb'))) as vcf_read:
-	#with open(vcf_file,'r') as vcf_read:
-		for line in vcf_read:
-			elements=line.strip().split()
-			if line[0]!='#':
-				chrom_1=elements[0]
-				if sex_chrom.lower() == 'n':
-					if chrom_1.lower() == 'x' or chrom_1.lower()=='y':
-						continue
-
-				a.chrom.append(elements[0])
-				a.start.append(int(elements[1])-1)
-				a.end.append(int(elements[1]))
-				a.form.append(snv(elements[3],elements[4]))
-				a.hap.append(np.random.randint(2))
-	vcf_read.close()
-
-
 	with open(seg_file,'r') as segment:
 		for line in segment:
 			elements=line.split('\t')
@@ -102,86 +84,43 @@ def main():
 				start_1=int(elements[1])-1
 				end_1=int(elements[2])-1
 
-				entry = a.add_entry(chrom_1,start_1,end_1)
+
 				hap_seg = [int(elements[10]),int(elements[11])]
 				for counter,i in enumerate(hap_seg):
 					if i > 1:
-						entry
+						a.add_entry(chrom_1,start_1,end_1)
 						a.hap.append(str(counter))
 						a.form.append(amplification(i))
 					if i<1:
-						entry
+						a.add_entry(chrom_1,start_1,end_1)
 						a.hap.append(str(counter))
 						a.form.append(deletion())
-
-				#chrom.append(elements[0])
-				#start.append(int(elements[1])-1)
-				#end.append(int(elements[2])-1)
-				#10 is A 11 is B
-				# hap_0 = int(elements[10])
-				# hap_1 = int(elements[11])
-				# if hap_0+hap_1==2:
-				# 	continue
-				# 	if hap_0<1:
-				# 		a.add_entry(chrom_1,start_1,end_1)
-				# 		a.hap.append('0')
-				# 		a.form.append('-1')
-				# 		a.add_entry(chrom_1,start_1,end_1)
-				# 		a.hap.append('1')
-				# 		a.form.append('+1')
-				# 	else:
-				# 		a.add_entry(chrom_1,start_1,end_1)
-				# 		a.hap.append('1')
-				# 		a.form.append('-1')
-				# 		a.add_entry(chrom_1,start_1,end_1)
-				# 		a.hap.append('0')
-				# 		a.form.append('+1')
-				# 		continue
-				# elif (hap_0+hap_1)>2:
-				# 	if hap_1==0 or hap_0==0:
-				# 		if hap_0==0:
-				# 			a.add_entry(chrom_1,start_1,end_1)
-				# 			a.hap.append('0')
-				# 			a.form.append('-1')
-				# 			a.add_entry(chrom_1,start_1,end_1)
-				# 			a.hap.append('1')
-				# 			a.form.append('+'+str(hap_1-1))
-				# 		else:
-				# 			a.add_entry(chrom_1,start_1,end_1)
-				# 			a.hap.append('1')
-				# 			a.form.append('-1')
-				# 			a.add_entry(chrom_1,start_1,end_1)
-				# 			a.hap.append('0')
-				# 			a.form.append('+'+str(hap_0-1))
-				# 	else:
-				# 		a.add_entry(chrom_1,start_1,end_1)
-				# 		a.hap.append('1')
-				# 		a.form.append('+'+str(hap_0-1))
-				# 		a.add_entry(chrom_1,start_1,end_1)
-				# 		a.hap.append('0')
-				# 		a.form.append('+'+str(hap_0-1))
-				# else:
-				# 	if hap_0 < 0 or hap_1 < 0:
-				# 		continue
-				# 	else:
-				# 		if hap_0==1:
-				# 			a.add_entry(chrom_1,start_1,end_1)
-				# 			a.hap.append('0')
-				# 			a.form.append('-1')
-				# 		elif hap_1==1:
-				# 			a.add_entry(chrom_1,start_1,end_1)
-				# 			a.hap.append('1')
-				# 			a.form.append('-1')
-				# 		else:
-				# 			a.add_entry(chrom_1,start_1,end_1)
-				# 			a.hap.append('0')
-				# 			a.form.append('-1')
-				# 			a.add_entry(chrom_1,start_1,end_1)
-				# 			a.hap.append('1')
-				# 			a.form.append('-1')
-
-
 	segment.close()
+
+	segment_length = len(a.chrom())
+	with io.TextIOWrapper(io.BufferedReader(gzip.open(vcf_file,'rb'))) as vcf_read:
+	#with open(vcf_file,'r') as vcf_read:
+		for line in vcf_read:
+			elements=line.strip().split()
+			if line[0]!='#':
+				for i in range(segment_length):
+					if int(elements[1]-1) < a.end()[i] and int(elements[1]-1) > a.start()[i]:
+						continue
+					else:
+						chrom_1=elements[0]
+						if sex_chrom.lower() == 'n':
+							if chrom_1.lower() == 'x' or chrom_1.lower()=='y' or chrom_1.lower()=='mt':
+								continue
+
+						a.chrom.append(elements[0])
+						a.start.append(int(elements[1])-1)
+						a.end.append(int(elements[1]))
+						a.form.append(snv(elements[3],elements[4]))
+						a.hap.append(np.random.randint(2))
+	vcf_read.close()
+
+
+
 
 	with open(out_file,'w') as out:
 		for i in range(len(a.chrom)):

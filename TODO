@@ -1,0 +1,6 @@
+#TODO
+
+1. For a combination of mutect and sequenza output there are a total of 16k lines.
+2. The muattation rates are too high thus you have to choose the number of mutations that you think will affect tumor progessions
+(eg. 5% or 50% of the segment file)
+3. overlapping of single variants and segment remove variants from segment file
