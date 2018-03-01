@@ -49,6 +49,12 @@ def amplification(count):
 
 def deletion():
 	return '-1'
+
+def check_if_in(position,s_arr,e_arr):
+	for i in range(len(s_arr)):
+		if int(s_arr[i])<=(position)<=int(e_arr[i]):
+			return True
+
 #chrom, start and end are lists
 #_1 are values to be appended to the above lists
 def main():
@@ -59,8 +65,6 @@ def main():
 			self.end=[]
 			self.form=[]
 			self.hap=[]
-
-
 
 		def add_entry(self,chrom_1,start_1,end_1):
 			self.chrom.append(chrom_1)
@@ -96,27 +100,33 @@ def main():
 						a.hap.append(str(counter))
 						a.form.append(deletion())
 	segment.close()
+	print('segments done')
 
-	segment_length = len(a.chrom())
+	segment_length = len(a.chrom)
 	with io.TextIOWrapper(io.BufferedReader(gzip.open(vcf_file,'rb'))) as vcf_read:
 	#with open(vcf_file,'r') as vcf_read:
 		for line in vcf_read:
+			# print('file loaded')
 			elements=line.strip().split()
+			# print('elements splitted')
 			if line[0]!='#':
-				for i in range(segment_length):
-					if int(elements[1]-1) < a.end()[i] and int(elements[1]-1) > a.start()[i]:
+			# print('first line skipped')
+			# print(len(elements))
+			# print(elements[1])
+			# print(len(a.start))
+			# print(len(a.end))
+				if check_if_in(int(elements[1]),a.start,a.end)==True:
+					continue
+				chrom_1=elements[0]
+				if sex_chrom.lower() == 'n':
+					if chrom_1.lower() == 'x' or chrom_1.lower()=='y' or chrom_1.lower()=='mt':
 						continue
-					else:
-						chrom_1=elements[0]
-						if sex_chrom.lower() == 'n':
-							if chrom_1.lower() == 'x' or chrom_1.lower()=='y' or chrom_1.lower()=='mt':
-								continue
 
-						a.chrom.append(elements[0])
-						a.start.append(int(elements[1])-1)
-						a.end.append(int(elements[1]))
-						a.form.append(snv(elements[3],elements[4]))
-						a.hap.append(np.random.randint(2))
+				a.chrom.append(elements[0])
+				a.start.append(int(elements[1])-1)
+				a.end.append(int(elements[1]))
+				a.form.append(snv(elements[3],elements[4]))
+				a.hap.append(np.random.randint(2))
 	vcf_read.close()
 
 
