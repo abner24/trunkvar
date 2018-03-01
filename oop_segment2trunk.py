@@ -15,7 +15,6 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--seg', help = 'sequenza segments file')
 parser.add_argument('--vcf', help = 'vcf file from MuTect')
-#parser.add_argument('-p', help='Mean ploidy value obtained from sequenza')
 parser.add_argument('-o', help='output directory')
 parser.add_argument('-s', help='(y/n) or yes/no option to include sex chromosomes')
 args=vars(parser.parse_args())
@@ -23,19 +22,9 @@ args=vars(parser.parse_args())
 seg_file = args['seg']
 vcf_file = args['vcf']
 sex_chrom = args['s']
-#ploidy = int(args['p'])
 out_dir = args['o']
 
-#if sys.argv[2] != None:
-#	seg_file=sys.argv[2]
-#else:
-#	print('continuing without a segment_output text file from sequenza')
-#if sys.argv[3] !=None:
-#	ploidy=int(sys.argv[3])
-#else:
-#	print('please input a ploidy number')
-
-out_file=os.path.join(out_dir,'trunkfile')
+out_file=os.path.join(out_dir,'trunkfile.txt')
 
 def A_allele(ploidy):
 	if ploidy%2==0:
@@ -55,11 +44,11 @@ def snv(ref,alt):
 		if values==alt:
 			return form
 
-	def amplification(count):
-		return '+'+str(count-1)
+def amplification(count):
+	return '+'+str(count-1)
 
-	def deletion():
-		return '-1'
+def deletion():
+	return '-1'
 #chrom, start and end are lists
 #_1 are values to be appended to the above lists
 def main():
@@ -115,13 +104,13 @@ def main():
 
 				entry = a.add_entry(chrom_1,start_1,end_1)
 				hap_seg = [int(elements[10]),int(elements[11])]
-				for counter,i in hap_seg:
+				for counter,i in enumerate(hap_seg):
 					if i > 1:
-						entry()
+						entry
 						a.hap.append(str(counter))
 						a.form.append(amplification(i))
 					if i<1:
-						entry()
+						entry
 						a.hap.append(str(counter))
 						a.form.append(deletion())
 
