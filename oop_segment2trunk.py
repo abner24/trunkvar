@@ -26,13 +26,6 @@ out_dir = args['o']
 
 out_file=os.path.join(out_dir,'trunkfile.txt')
 
-def A_allele(ploidy):
-	if ploidy%2==0:
-		x=ploidy/2
-	else:
-		x=np.floor(ploidy/2)+1
-	return x
-
 def snv(ref,alt):
 	#returns the form of the allele
 	mutation_matrix={'N':['N','N','N'],
@@ -106,18 +99,13 @@ def main():
 	with io.TextIOWrapper(io.BufferedReader(gzip.open(vcf_file,'rb'))) as vcf_read:
 	#with open(vcf_file,'r') as vcf_read:
 		for line in vcf_read:
-			# print('file loaded')
 			elements=line.strip().split()
-			# print('elements splitted')
 			if line[0]!='#':
-			# print('first line skipped')
-			# print(len(elements))
-			# print(elements[1])
-			# print(len(a.start))
-			# print(len(a.end))
+				#do not append to vcf file if variant overlaps with segment
 				if check_if_in(int(elements[1]),a.start,a.end)==True:
 					continue
 				chrom_1=elements[0]
+				#skips sex chromosomes based on input parameter
 				if sex_chrom.lower() == 'n':
 					if chrom_1.lower() == 'x' or chrom_1.lower()=='y' or chrom_1.lower()=='mt':
 						continue
@@ -128,9 +116,6 @@ def main():
 				a.form.append(snv(elements[3],elements[4]))
 				a.hap.append(np.random.randint(2))
 	vcf_read.close()
-
-
-
 
 	with open(out_file,'w') as out:
 		for i in range(len(a.chrom)):
