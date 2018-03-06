@@ -93,7 +93,7 @@ def main():
 						a.hap.append(str(counter))
 						a.form.append(deletion())
 	segment.close()
-	print('segments done')
+	print('segments done',len(a.chrom))
 
 	segment_length = len(a.chrom)
 	with io.TextIOWrapper(io.BufferedReader(gzip.open(vcf_file,'rb'))) as vcf_read:
@@ -116,13 +116,25 @@ def main():
 				a.form.append(snv(elements[3],elements[4]))
 				a.hap.append(np.random.randint(2))
 	vcf_read.close()
+	rand_gen=np.random.randint(len(a.chrom),size=500)
+	idx=np.unique(rand_gen,return_index=True)[1]
+	rand_filter=rand_gen[np.sort(idx)]
 
+	print(rand_filter, len(a.chrom))
 	with open(out_file,'w') as out:
-		for i in range(len(a.chrom)):
+		'''uncomment to write all variants to out_file'''
+		# for i in range(len(a.chrom)):
+		# 	if i==0:
+		# 		out.write('#chr'+'\t' 'hap'+'\t' +'start'+'\t'+ 'end'+'\t'+ 'var'+'\n')
+		# 	else:
+		# 		out.write(str(a.chrom[i].strip('\"'))+'\t'+str(a.hap[i])+'\t'+str(a.start[i])+'\t'+str(a.end[i])+'\t'+str(a.form[i])+'\n')
+		
+		'''select from 200 random integers picked froma  normal distribution and write to file (testing phase)'''
+		for i in range(300):
 			if i==0:
 				out.write('#chr'+'\t' 'hap'+'\t' +'start'+'\t'+ 'end'+'\t'+ 'var'+'\n')
 			else:
-				out.write(str(a.chrom[i].strip('\"'))+'\t'+str(a.hap[i])+'\t'+str(a.start[i])+'\t'+str(a.end[i])+'\t'+str(a.form[i])+'\n')
+				out.write(str(a.chrom[rand_filter[i]].strip('\"'))+'\t'+str(a.hap[rand_filter[i]])+'\t'+str(a.start[rand_filter[i]])+'\t'+str(a.end[rand_filter[i]])+'\t'+str(a.form[rand_filter[i]])+'\n')
 	out.close()
 
 main()
