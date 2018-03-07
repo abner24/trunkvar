@@ -46,12 +46,11 @@ def deletion():
 # s_arr=3
 # e_arr=7
 # lens=e_arr-s_arr
-def check_if_in(position,s_arr,e_arr,lens):
+def check_if_in(position,s_arr,e_arr,lens,hap,h_arr,chrom,c_arr):
 	for i in range(lens):
-		if int(s_arr[i])<=(position)<=int(e_arr[i]):
+		if int(chrom) == int(c_arr[i].strip('\"')) and int(hap)==int(h_arr[i]) and int(s_arr[i])<(position)<=(int(e_arr[i])+1):
 			return True
-		else:
-			return False
+			break
 
 #chrom, start and end are lists
 #_1 are values to be appended to the above lists
@@ -106,24 +105,25 @@ def main():
 			elements=line.strip().split()
 			if line[0]!='#':
 			#do not append to vcf file if variant overlaps with segment
-				if check_if_in(int(elements[1]),a.start,a.end,segment_length) is True:
-					continue
+				rand_hap=np.random.randint(2)
+				chrom_1=elements[0]
 				#skips sex chromosomes based on input parameter
 				if sex_chrom.lower() == 'n':
-					chrom_1=elements[0]
 					if chrom_1.lower() == 'x' or chrom_1.lower()=='y' or chrom_1.lower()=='mt':
 						continue
+				if check_if_in(int(elements[1]),a.start,a.end,segment_length,rand_hap,a.hap,chrom_1,a.chrom):
+					continue
 				a.chrom.append(elements[0])
 				a.start.append(int(elements[1])-1)
 				a.end.append(int(elements[1]))
 				a.form.append(snv(elements[3],elements[4]))
-				a.hap.append(np.random.randint(2))
+				a.hap.append(rand_hap)
 	vcf_read.close()
 	rand_gen=np.random.randint(len(a.chrom),size=500)
 	idx=np.unique(rand_gen,return_index=True)[1]
 	rand_filter=rand_gen[np.sort(idx)]
 
-	print(rand_filter, len(a.chrom))
+	print(len(a.chrom))
 	with open(out_file,'w') as out:
 		'''uncomment to write all variants to out_file'''
 		for i in range(len(a.chrom)):
