@@ -5,3 +5,4 @@
 (eg. 5% or 50% of the segment file)
 3. write a function to filter variants.
 4. overlapping of single variants and segment remove variants from segment file (done)
+5. modify the way that chromosome is checked, wont work for sex chromosomes at the moment.
