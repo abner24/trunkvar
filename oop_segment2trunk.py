@@ -24,7 +24,7 @@ vcf_file = args['vcf']
 sex_chrom = args['s']
 out_dir = args['o']
 
-out_file=os.path.join(out_dir,'trunkfile.txt')
+out_file=os.path.join(out_dir,'alltrunkfile.txt')
 
 def snv(ref,alt):
 	#returns the form of the allele
@@ -42,11 +42,16 @@ def amplification(count):
 
 def deletion():
 	return '-1'
-
-def check_if_in(position,s_arr,e_arr):
-	for i in range(len(s_arr)):
+# position=6
+# s_arr=3
+# e_arr=7
+# lens=e_arr-s_arr
+def check_if_in(position,s_arr,e_arr,lens):
+	for i in range(lens):
 		if int(s_arr[i])<=(position)<=int(e_arr[i]):
 			return True
+		else:
+			return False
 
 #chrom, start and end are lists
 #_1 are values to be appended to the above lists
@@ -94,22 +99,20 @@ def main():
 						a.form.append(deletion())
 	segment.close()
 	print('segments done',len(a.chrom))
-
 	segment_length = len(a.chrom)
-	with io.TextIOWrapper(io.BufferedReader(gzip.open(vcf_file,'rb'))) as vcf_read:
-	#with open(vcf_file,'r') as vcf_read:
+	#with io.TextIOWrapper(io.BufferedReader(gzip.open(vcf_file,'rb'))) as vcf_read:
+	with open(vcf_file,'r') as vcf_read:
 		for line in vcf_read:
 			elements=line.strip().split()
 			if line[0]!='#':
-				#do not append to vcf file if variant overlaps with segment
-				if check_if_in(int(elements[1]),a.start,a.end)==True:
+			#do not append to vcf file if variant overlaps with segment
+				if check_if_in(int(elements[1]),a.start,a.end,segment_length) is True:
 					continue
-				chrom_1=elements[0]
 				#skips sex chromosomes based on input parameter
 				if sex_chrom.lower() == 'n':
+					chrom_1=elements[0]
 					if chrom_1.lower() == 'x' or chrom_1.lower()=='y' or chrom_1.lower()=='mt':
 						continue
-
 				a.chrom.append(elements[0])
 				a.start.append(int(elements[1])-1)
 				a.end.append(int(elements[1]))
@@ -123,18 +126,18 @@ def main():
 	print(rand_filter, len(a.chrom))
 	with open(out_file,'w') as out:
 		'''uncomment to write all variants to out_file'''
-		# for i in range(len(a.chrom)):
-		# 	if i==0:
-		# 		out.write('#chr'+'\t' 'hap'+'\t' +'start'+'\t'+ 'end'+'\t'+ 'var'+'\n')
-		# 	else:
-		# 		out.write(str(a.chrom[i].strip('\"'))+'\t'+str(a.hap[i])+'\t'+str(a.start[i])+'\t'+str(a.end[i])+'\t'+str(a.form[i])+'\n')
-		
-		'''select from 200 random integers picked froma  normal distribution and write to file (testing phase)'''
-		for i in range(300):
+		for i in range(len(a.chrom)):
 			if i==0:
-				out.write('#chr'+'\t' 'hap'+'\t' +'start'+'\t'+ 'end'+'\t'+ 'var'+'\n')
+		 		out.write('#chr'+'\t' 'hap'+'\t' +'start'+'\t'+ 'end'+'\t'+ 'var'+'\n')
 			else:
-				out.write(str(a.chrom[rand_filter[i]].strip('\"'))+'\t'+str(a.hap[rand_filter[i]])+'\t'+str(a.start[rand_filter[i]])+'\t'+str(a.end[rand_filter[i]])+'\t'+str(a.form[rand_filter[i]])+'\n')
+				out.write(str(a.chrom[i].strip('\"'))+'\t'+str(a.hap[i])+'\t'+str(a.start[i])+'\t'+str(a.end[i])+'\t'+str(a.form[i])+'\n')
+
+		'''select from 200 random integers picked froma  normal distribution and write to file (testing phase)'''
+		#for i in range(300):
+		#	if i==0:
+		#		out.write('#chr'+'\t' 'hap'+'\t' +'start'+'\t'+ 'end'+'\t'+ 'var'+'\n')
+		#	else:
+		#		out.write(str(a.chrom[rand_filter[i]].strip('\"'))+'\t'+str(a.hap[rand_filter[i]])+'\t'+str(a.start[rand_filter[i]])+'\t'+str(a.end[rand_filter[i]])+'\t'+str(a.form[rand_filter[i]])+'\n')
 	out.close()
 
 main()
