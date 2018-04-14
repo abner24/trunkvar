@@ -47,23 +47,18 @@ def amplification(count):
 def deletion():
         return '-1'
 #since in sequqnza files are already sorted according to starting length no need to check the final condition where a bigger segment totally overlaps with the current segment
-
 ## need to write a function to return the copy number which the mutation falls under
 
 def return_cn(s_arr,e_arr,hap_arr,chrom_arr,pos,chrom,hap,form):
     for i in range(len(s_arr)):
         if chrom_arr[i].split('\"') == chrom and int(hap_arr[i])==int(hap) and (int(s_arr[i])<=pos<=int(e_arr[i])):
-            return form[i]
+            return int(form[i])
 
 def check_if_in(pos,s_arr,e_arr,lens,hap,h_arr,chrom,c_arr):
     for i in range(lens):
         if chrom == c_arr[i].strip('\"') and int(hap)==int(h_arr[i]) and (int(s_arr[i])<=pos<=int(e_arr[i])):
             return [True,i]
 
-
-# random binary generator for hap
-#chrom, start and end are lists
-#_1 are values to be appended to the above lists
 def main():
     class allele:
         def __init__(self):
@@ -189,26 +184,28 @@ def main():
                         sam,chm,pos,ref = elements[2].split(':')
                         alt = elements[4]
                         cn = [int(elements[9]),int(elements[10])] #[minor,major]
-
                         parental = [0,1]
-                        #seg_cn = [return_cn(a.start,a.end,a.hap,a.chrom,pos,chm,parental[0],a.form),return_cn(a.start,a.end,a.hap,a.chrom,pos,chm,parental[1],a.form)]
-                        for num,form in enumerate(cn):
-                            #if form == 0 or form > max(cn):
-                            #    continue
-                            #if form <= cn[0]:
-                                stm.bearer_append(num,[bearer+1 for bearer in range(int(form))])
+                        seg_cn = [return_cn(a.start,a.end,a.hap,a.chrom,pos,chm,parental[0],a.form),return_cn(a.start,a.end,a.hap,a.chrom,pos,chm,parental[1],a.form)]
+                        if cn == seg_cn:
+                            for i in range(2):
+                                stm.bearer_append(i,[bearer+1 for bearer in cn[0]])
                                 stm.chrom.append(chm)
                                 stm.start.append(int(pos)-1)
                                 stm.end.append(int(pos))
                                 stm.form.append(snv(ref,alt))
                                 continue
-                            #if form <= cn[1]:
-                            #    stm.bearer_append(num,[bearer+1 for bearer in range(int(form))])
-                            #    stm.chrom.append(chm)
-                            #    stm.start.append(int(pos)-1)
-                            #    stm.end.append(int(pos))
-                            #    stm.form.append(snv(ref,alt))
-                            #    continue
+                        else:
+                            for seg_num,seg_form in enumerate(seg_cn):
+                                tmp = -1
+                                for cur_num,cur_form in enumerate(cn):
+                                    if cur_form <= seg_form and tmp != cur_num:
+                                        stm.bearer_append(cur_num,[bearer+1 for bearer in range(int(form))])
+                                        stm.chrom.append(chm)
+                                        stm.start.append(int(pos)-1)
+                                        stm.end.append(int(pos))
+                                        stm.form.append(snv(ref,alt))
+                                        tmp = cur_num
+                                        break
         tsv_read.close()
 
     print(len(seg.chrom))
