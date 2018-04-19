@@ -12,6 +12,7 @@ import gzip
 import numpy as np
 import sys
 import argparse
+from copy import deepcopy
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--seg', help = 'sequenza segments file')
@@ -51,13 +52,13 @@ def deletion():
 
 def return_cn(s_arr,e_arr,hap_arr,chrom_arr,pos,chrom,hap,form):
     for i in range(len(s_arr)):
-        if chrom_arr[i].split('\"') == chrom and int(hap_arr[i])==int(hap) and (int(s_arr[i])<=pos<=int(e_arr[i])):
-            return int(form[i])
+        if chrom_arr[i].split('\"') == chrom and hap_arr[i]==hap and s_arr[i]<=int(pos)<e_arr[i]:
+            return i
 
 def check_if_in(pos,s_arr,e_arr,lens,hap,h_arr,chrom,c_arr):
     for i in range(lens):
-        if chrom == c_arr[i].strip('\"') and int(hap)==int(h_arr[i]) and (int(s_arr[i])<=pos<=int(e_arr[i])):
-            return [True,i]
+        if chrom == c_arr[i].strip('\"') and int(hap)==int(h_arr[i]) and (int(s_arr[i])<= int(pos)<int(e_arr[i])):
+            return True,i
 
 def main():
     class allele:
@@ -81,13 +82,21 @@ def main():
 
         def is_overlap(self,cur_pos,cur_hap,cur_chrom):
             for i in range(len(self.chrom)):
-                if self.chrom[i].strip('\"') == cur_chrom and int(self.hap[i]) == int(cur_hap) and (int(self.start[i])<=cur_pos<=int(self.end[i])):
+                if self.chrom[i].strip('\"') == cur_chrom and int(self.hap[i]) == int(cur_hap) and (int(self.start[i])<=cur_pos<int(self.end[i])):
                     return True, i
 
         def is_deletion(self,cur_pos,cur_hap,cur_chrom):
             condition,index = self.is_overlap(cur_pos,cur_hap,cur_chrom)
             if condition == True and self.form[index] == '-1':
                 return True
+
+        def append_index(self,chrm,start,end,form,hap,bearer):
+            self.chrom.append(chrm)
+            self.start.append(start)
+            self.end.append(end)
+            self.form.append(form)
+            self.hap.append(hap)
+            self.bearer.append(bearer)
 
     #initialising object instance
     seg = allele()
@@ -143,7 +152,7 @@ def main():
                                                     seg.form.append(deletion())
     segment.close()
     print('segments done',len(seg.chrom))
-  
+
     #fn_open = gzip.open if vcf_file.endswith('.gz') else open
     if vcf_file:
         if vcf_file.endswith('.gz'):
@@ -162,7 +171,7 @@ def main():
                 if sex_chrom.lower() == 'n':
                     if chrom_1.lower() == 'x' or chrom_1.lower()=='y':
                         continue
-                    if check_if_in(int(elements[1]),seg.start,seg.end,segment_length,rand_hap,seg.hap,chrom_1,seg.chrom)[0]:
+                    if check_if_in(int(elements[1]),seg.start,seg.end,segment_length,rand_hap,seg.hap,chrom_1,seg.chrom):
                         continue
                     seg.chrom.append(elements[0])
                     seg.start.append(int(elements[1]))
@@ -185,48 +194,52 @@ def main():
                         alt = elements[4]
                         cn = [int(elements[9]),int(elements[10])] #[minor,major]
                         parental = [0,1]
-                        seg_cn = [return_cn(a.start,a.end,a.hap,a.chrom,pos,chm,parental[0],a.form),return_cn(a.start,a.end,a.hap,a.chrom,pos,chm,parental[1],a.form)]
-                        if cn == seg_cn:
-                            for i in range(2):
-                                stm.bearer_append(i,[bearer+1 for bearer in cn[0]])
-                                stm.chrom.append(chm)
-                                stm.start.append(int(pos)-1)
-                                stm.end.append(int(pos))
-                                stm.form.append(snv(ref,alt))
-                                continue
-                        else:
-                            for seg_num,seg_form in enumerate(seg_cn):
-                                tmp = -1
-                                for cur_num,cur_form in enumerate(cn):
-                                    if cur_form <= seg_form and tmp != cur_num:
-                                        stm.bearer_append(cur_num,[bearer+1 for bearer in range(int(form))])
-                                        stm.chrom.append(chm)
-                                        stm.start.append(int(pos)-1)
-                                        stm.end.append(int(pos))
-                                        stm.form.append(snv(ref,alt))
-                                        tmp = cur_num
-                                        break
+
+                        for hap in parental:
+                            stm.chrom.append(chm)
+                            stm.start.append(pos)
+                            stm.end.append(int(pos)+1)
+                            stm.hap.append(np.random.randint(2))
+                            stm.form.append(snv(ref,alt))
+                            stm.bearer.append(range(cn[hap]))
         tsv_read.close()
 
-    print(len(seg.chrom))
-    print(len(stm.chrom))
+    stm_filter = allele()
+    for i in range(len(seg.chrom)):
+        for j in range(len(stm.chrom)):
+            if seg.chrom[i] == stm.chrom[j] and seg.hap[i] == stm.hap[j]:
+                if int(seg.start[i]) <= int(stm.start[j]) < int(seg.end[i]):
+                    if max(stm.bearer[j],default=99) <= int(seg.form[i]):
+                        stm_filter.append_index(stm.chrom[j],stm.start[j],stm.end[j],stm.form[j],stm.hap[j],stm.bearer[j])
+                        continue
+                else:
+                    if check_if_in(stm.start[j],stm_filter.start,stm_filter.end,len(stm_filter.chrom),stm.hap[j],stm_filter.hap,stm.chrom[j],stm_filter.chrom):
+                        continue
+                    if check_if_in(stm.start[j],seg.start,seg.end,len(seg.chrom),stm.hap[j],seg.hap,stm.chrom[j],seg.chrom):
+                        continue
+                    stm_filter.append_index(stm.chrom[j],stm.start[j],stm.end[j],stm.form[j],stm.hap[j],None)
+                    break
+
+
+    print('svn + cnv: ',len(seg.chrom))
+    print('clonal variants: ',len(stm.chrom))
+    print('filtered mutation: ',len(stm_filter.chrom))
+
     with open(out_file,'w') as out:
         '''uncomment to write all variants to out_file'''
-        out.write('{}\t{}\t{}\t{}\t{}\t{}\n'.format('#chr','hap','start','end','var','bearer'))
+        out.write('{}\t{}\t{}\t{}\t{}\n'.format('#chr','hap','start','end','var'))
         for i in range(len(seg.chrom)):
             if (int(seg.form[i])>6):
                 continue
             out.write(str(seg.chrom[i].strip('\"'))+'\t'+str(seg.hap[i])+'\t'+str(seg.start[i])+'\t'+str(seg.end[i])+'\t'+str(seg.form[i])+'\n')
-        for i in range(len(stm.chrom)):
-            #if len(stm.bearer[i])==0:
-            print('{}\n{}\n{}n{}\n{}\n{}\n{}\n{}'.format(stm.start[i],seg.start,seg.end,segment_length,stm.hap[i],seg.hap,stm.chrom[i],seg.chrom))
-            condition,index= check_if_in(stm.start[i],seg.start,seg.end,segment_length,stm.hap[i],seg.hap,stm.chrom[i],seg.chrom)
-            if seg.form[index] <  max(stm.bearer[i]):
+
+## filtered until Hechuan does the necessary modifications to trunk variants script
+        for i in range(len(stm_filter.chrom)):
+            if len(stm.bearer[i]) == 0 or stm.bearer[i] == None:
+                out.write('{}\t{}\t{}\t{}\t{}\n'.format(stm_filter.chrom[i],stm_filter.hap[i],stm_filter.start[i],stm_filter.end[i],stm_filter.form[i]))
                 continue
-            #if a.form[a.is_overlap(stm.start[i],stm.end[i],stm.chrom[i])[1]] == '-1':
-            #    continue
-            out.write('{}\t{}\t{}\t{}\t{}\t{}\n'.format(stm.chrom[i],stm.hap[i],stm.start[i],stm.end[i],stm.form[i],','.join(repr(e) for e in stm.bearer[i])))
-            '''select from 200 random integers picked froma  normal distribution and write to file (testing phase)'''
+            if check_if_in(stm_filter.start[i],seg.start,seg.end,len(seg.start),stm_filter.hap[i],seg.hap,stm_filter.chrom[i],seg.chrom):
+                out.write('{}\t{}\t{}\t{}\t{}\t{}\n'.format(stm_filter.chrom[i],stm_filter.hap[i],stm_filter.start[i],stm_filter.end[i],stm_filter.form[i],','.join(repr(e) for e in stm.bearer[i])))
     out.close()
 
 
