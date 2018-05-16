@@ -12,7 +12,6 @@ import gzip
 import numpy as np
 import sys
 import argparse
-from copy import deepcopy
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--seg', help = 'sequenza segments file')
@@ -109,7 +108,8 @@ def main():
                     segment_length = len(seg.chrom)
                     if "chromosome" in elements[0]:
                             continue
-
+                    elif int(elements[10]) > 6:
+                        continue
                     else:
                             chrom_1=elements[0].strip('\"')
                             if sex_chrom.lower() == 'n':
@@ -205,13 +205,16 @@ def main():
         tsv_read.close()
 
     stm_filter = allele()
+    i_index = -1
     for i in range(len(seg.chrom)):
         for j in range(len(stm.chrom)):
-            if seg.chrom[i] == stm.chrom[j] and seg.hap[i] == stm.hap[j]:
+            if seg.chrom[i] == stm.chrom[j]:
                 if int(seg.start[i]) <= int(stm.start[j]) < int(seg.end[i]):
                     if max(stm.bearer[j],default=99) <= int(seg.form[i]):
-                        stm_filter.append_index(stm.chrom[j],stm.start[j],stm.end[j],stm.form[j],stm.hap[j],stm.bearer[j])
-                        continue
+                        if i_index < i:
+                            stm_filter.append_index(stm.chrom[j],stm.start[j],stm.end[j],stm.form[j],seg.hap[i],stm.bearer[j])
+                            i_index = i
+                            continue
                 else:
                     if check_if_in(stm.start[j],stm_filter.start,stm_filter.end,len(stm_filter.chrom),stm.hap[j],stm_filter.hap,stm.chrom[j],stm_filter.chrom):
                         continue
@@ -227,13 +230,12 @@ def main():
 
     with open(out_file,'w') as out:
         '''uncomment to write all variants to out_file'''
-        out.write('{}\t{}\t{}\t{}\t{}\n'.format('#chr','hap','start','end','var'))
+        out.write('{}\t{}\t{}\t{}\t{}\t{}\n'.format('#chr','hap','start','end','var','bearer'))
         for i in range(len(seg.chrom)):
             if (int(seg.form[i])>6):
                 continue
             out.write(str(seg.chrom[i].strip('\"'))+'\t'+str(seg.hap[i])+'\t'+str(seg.start[i])+'\t'+str(seg.end[i])+'\t'+str(seg.form[i])+'\n')
 
-## filtered until Hechuan does the necessary modifications to trunk variants script
         for i in range(len(stm_filter.chrom)):
             if len(stm.bearer[i]) == 0 or stm.bearer[i] == None:
                 out.write('{}\t{}\t{}\t{}\t{}\n'.format(stm_filter.chrom[i],stm_filter.hap[i],stm_filter.start[i],stm_filter.end[i],stm_filter.form[i]))
