@@ -259,9 +259,9 @@ def main():
 
         for params in chr_config:
             for i in range(len(stm_filter.chrom)):
-                if seg.chrom[i] == params[0]:
+                if stm_filter.chrom[i] == params[0]:
                     if str(stm_filter.hap[i]) in params[1]:
-                        if len(stm.bearer[i]) == 0 or stm.bearer[i] == None:
+                        if stm_filter.bearer[i] == None:
                             out.write('{}\t{}\t{}\t{}\t{}\n'.format(stm_filter.chrom[i],stm_filter.hap[i],stm_filter.start[i],stm_filter.end[i],stm_filter.form[i]))
                             continue
                         if check_if_in(stm_filter.start[i],seg.start,seg.end,len(seg.start),stm_filter.hap[i],seg.hap,stm_filter.chrom[i],seg.chrom):
