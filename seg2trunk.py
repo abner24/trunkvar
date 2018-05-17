@@ -12,6 +12,7 @@ import gzip
 import numpy as np
 import sys
 import argparse
+import yaml
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--seg', help = 'sequenza segments file')
@@ -19,6 +20,7 @@ parser.add_argument('--vcf', help = 'vcf file from MuTect [optional]')
 parser.add_argument('--stm', help = 'tsv file from Estimate Clonality')
 parser.add_argument('-o', help='output directory')
 parser.add_argument('-s', help='(y/n) or yes/no option to include sex chromosomes')
+parser.add_argument('--config', help = 'CSiTE phylovar config file.')
 args=vars(parser.parse_args())
 
 seg_file = args['seg']
@@ -26,6 +28,7 @@ vcf_file = args['vcf']
 est_file = args['stm']
 sex_chrom = args['s']
 out_dir = args['o']
+data = args['config']
 
 out_file=os.path.join(out_dir,'alltrunkfile.txt')
 
@@ -228,20 +231,41 @@ def main():
     print('clonal variants: ',len(stm.chrom))
     print('filtered mutation: ',len(stm_filter.chrom))
 
+    config = yaml.load(open(data,'r'))
+    chr_config = []
+    chrm = []
+    for chromosome in config['chromosomes']:
+        for key, value in chromosome.items():
+            for nested_keys, nested_value in value.items():
+                if nested_keys == "parental":
+                    chr_config.append([key,list(set(nested_value))])
+                    chrm.append(key)
+                else:
+                    if key in chrm:
+                        continue
+                    chr_config.append([key,['0','1']])
+                    chrm.append(key)
+
     with open(out_file,'w') as out:
         '''uncomment to write all variants to out_file'''
         out.write('{}\t{}\t{}\t{}\t{}\t{}\n'.format('#chr','hap','start','end','var','bearer'))
-        for i in range(len(seg.chrom)):
-            if (int(seg.form[i])>6):
-                continue
-            out.write(str(seg.chrom[i].strip('\"'))+'\t'+str(seg.hap[i])+'\t'+str(seg.start[i])+'\t'+str(seg.end[i])+'\t'+str(seg.form[i])+'\n')
+        for params in chr_config:
+            for index in range(len(seg.chrom)):
+                if seg.chrom[index] == params[0]:
+                    if (int(seg.form[index])>6):
+                        continue
+                    if str(seg.hap[index]) in params[1]:
+                        out.write(str(seg.chrom[index].strip('\"'))+'\t'+str(seg.hap[index])+'\t'+str(seg.start[index])+'\t'+str(seg.end[index])+'\t'+str(seg.form[index])+'\n')
 
-        for i in range(len(stm_filter.chrom)):
-            if len(stm.bearer[i]) == 0 or stm.bearer[i] == None:
-                out.write('{}\t{}\t{}\t{}\t{}\n'.format(stm_filter.chrom[i],stm_filter.hap[i],stm_filter.start[i],stm_filter.end[i],stm_filter.form[i]))
-                continue
-            if check_if_in(stm_filter.start[i],seg.start,seg.end,len(seg.start),stm_filter.hap[i],seg.hap,stm_filter.chrom[i],seg.chrom):
-                out.write('{}\t{}\t{}\t{}\t{}\t{}\n'.format(stm_filter.chrom[i],stm_filter.hap[i],stm_filter.start[i],stm_filter.end[i],stm_filter.form[i],','.join(repr(e) for e in stm.bearer[i])))
+        for params in chr_config:
+            for i in range(len(stm_filter.chrom)):
+                if seg.chrom[i] == params[0]:
+                    if str(stm_filter.hap[i]) in params[1]:
+                        if len(stm.bearer[i]) == 0 or stm.bearer[i] == None:
+                            out.write('{}\t{}\t{}\t{}\t{}\n'.format(stm_filter.chrom[i],stm_filter.hap[i],stm_filter.start[i],stm_filter.end[i],stm_filter.form[i]))
+                            continue
+                        if check_if_in(stm_filter.start[i],seg.start,seg.end,len(seg.start),stm_filter.hap[i],seg.hap,stm_filter.chrom[i],seg.chrom):
+                            out.write('{}\t{}\t{}\t{}\t{}\t{}\n'.format(stm_filter.chrom[i],stm_filter.hap[i],stm_filter.start[i],stm_filter.end[i],stm_filter.form[i],','.join(repr(e) for e in stm.bearer[i])))
     out.close()
 
 
